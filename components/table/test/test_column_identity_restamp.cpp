@@ -52,3 +52,21 @@ TEST_CASE("components::table::column_definition::a_copy_owns_its_default") {
     CHECK_FALSE(original.default_value().is_null(0));
     CHECK(original.default_value().get_value<std::string_view>(0) == "original");
 }
+
+TEST_CASE("components::table::column_definition::a_copy_preserves_sub_ids") {
+    column_definition_t original("name", components::types::logical_type::INTEGER);
+    original.set_added_sub_id(7);
+    original.set_dropped_sub_id(11);
+
+    column_definition_t copy(original);
+    CHECK(copy.added_sub_id() == 7);
+    CHECK(copy.dropped_sub_id() == 11);
+
+    column_definition_t assigned("other", components::types::logical_type::INTEGER);
+    assigned.set_added_sub_id(20);
+    assigned.set_dropped_sub_id(30);
+
+    assigned = original;
+    CHECK(assigned.added_sub_id() == 7);
+    CHECK(assigned.dropped_sub_id() == 11);
+}
