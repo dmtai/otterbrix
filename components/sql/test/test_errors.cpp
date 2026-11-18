@@ -293,6 +293,8 @@ TEST_CASE("components::sql::errors::parser_error_carries_its_position") {
         "FROM t",
         R"_(window EXCLUDE clause not yet implemented)_",
         -1);
+    TEST_PARSER_ERROR_AT("SELECT 1, $2147483648;", R"_(parameter number too large at or near "$2147483648")_", 11);
+    TEST_PARSER_ERROR_AT("SELECT $99999999999;", R"_(parameter number too large at or near "$99999999999")_", 8);
 
     SECTION("the next statement on the same arena parses") {
         auto failed = raw_parser(&arena_resource, "SELECT 'abc");

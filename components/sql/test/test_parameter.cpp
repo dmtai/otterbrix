@@ -531,3 +531,31 @@ TEST_CASE("components::sql::insert_select_bind") {
         REQUIRE(std::string(result.error().what) == "Not all parameters were bound: $1");
     }
 }
+
+TEST_CASE("components::sql::parameter_number_range") {
+    auto resource = core::pmr::otterbrix_resource();
+    std::pmr::monotonic_buffer_resource arena_resource(&resource);
+
+    const auto check_number = [&](const char* query, int expected) {
+        INFO(query);
+
+        auto* statements = parse_ok(&arena_resource, query);
+        REQUIRE(list_length(statements) == 1);
+
+        auto* statement = reinterpret_cast<Node*>(linitial(statements));
+        REQUIRE(nodeTag(statement) == T_SelectStmt);
+
+        auto* select = reinterpret_cast<SelectStmt*>(statement);
+        REQUIRE(list_length(select->targetList) == 1);
+
+        auto* target = reinterpret_cast<ResTarget*>(linitial(select->targetList));
+        REQUIRE(nodeTag(target->val) == T_ParamRef);
+
+        auto* parameter = reinterpret_cast<ParamRef*>(target->val);
+        CHECK(parameter->number == expected);
+    };
+
+    check_number("SELECT $1;", 1);
+    check_number("SELECT $0001;", 1);
+    check_number("SELECT $2147483647;", 2147483647);
+}

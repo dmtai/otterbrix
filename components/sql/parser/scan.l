@@ -31,6 +31,7 @@
  */
 #include <ctype.h>
 #include <unistd.h>
+#include <charconv>
 
 #include <components/sql/parser/gramparse.h>
 #include <components/sql/parser/guc.h> /* only needed for GUC variables */
@@ -934,7 +935,15 @@ other			.
 
 {param}			{
 					SET_YYLLOC();
-					yylval->ival = atol(yytext + 1);
+
+					int32_t number = 0;
+					const char* end = yytext + yyleng;
+					const auto result = std::from_chars(yytext + 1, end, number);
+
+					if (result.ec != std::errc{})
+						yyerror("parameter number too large");
+
+					yylval->ival = number;
 					return PARAM;
 				}
 
